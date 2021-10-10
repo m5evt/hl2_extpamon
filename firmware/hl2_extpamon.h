@@ -1,5 +1,4 @@
 /*
- * main.c 
  *
  * This software is covered by a modified MIT License, see paragraphs 4
  *
