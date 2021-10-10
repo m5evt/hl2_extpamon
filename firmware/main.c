@@ -116,6 +116,7 @@ uint8_t i2cGetData(uint8_t read_addr, uint8_t this_byte){
     case MRF101_STATUS:
       switch (this_byte) {
         case 0:
+          if (temperature_raw > 40) SBI(status_reg, 7);      
           return temperature_raw;
         case 1:
           return current_raw;
@@ -144,7 +145,6 @@ uint8_t i2cWriteData(uint8_t write_addr, uint8_t data) {
       // current * 10, e.g. 4 A = 40
       break;
     case SET_TEMP_TRIP:
-      //PORTA.OUTTGL = PIN1_bm;
       // temp -> 26 deg C = 26
       break;
     default: break;
@@ -192,17 +192,25 @@ int main(void) {
 
     for (;;) {
        if (do_adc_flag) {
+
+    PORTA.OUTSET = PIN1_bm;
          if ((status_reg & ADCSAMPLE_M) == ADCSAMPLE_M) {
-           temperature_raw = ADC0_read(TEMPERATURE);
+           uint16_t temp_raw = ADC0_read(TEMPERATURE);
+           float this_temperature = ((float)temp_raw * (3.3 / 1024)) * 100;
+           temperature_raw = (uint8_t)this_temperature;
            CBI(status_reg, 0);      
          } 
          else {
            uint16_t temp = ADC0_read(CURRENT);
-           current_raw = (temp >> 2) & 0xFF; 
+           float this_c = ((float)temp * (3.3 /1024) / 20) / 0.033;
+           this_c = (this_c / 5) * 255;
+           //current_raw = (temp >> 2) & 0xFF; 
+           current_raw = (uint8_t)this_c;
            SBI(status_reg, 0);      
          }
-       }
+    PORTA.OUTCLR = PIN1_bm;
        do_adc_flag = 0;
+       }
     }
 }
 
