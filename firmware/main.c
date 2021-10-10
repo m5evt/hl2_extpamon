@@ -134,11 +134,11 @@ void ChangeIOState(void) {
   IOPORT = status_reg_b;
 }
 // Read byte sent from HL2
-uint8_t i2cWriteData(uint8_t write_addr) {
+uint8_t i2cWriteData(uint8_t write_addr, uint8_t data) {
   switch (write_addr) {
     case SET_CFG:
-      //status_reg |= (write_addr & STATUSFLAGS_M);
-      //ChangeIOState();
+      status_reg_b = data;
+      ChangeIOState();
       break;
     case SET_CURRENT_TRIP:
       // current * 10, e.g. 4 A = 40
@@ -149,9 +149,6 @@ uint8_t i2cWriteData(uint8_t write_addr) {
       break;
     default: break;
   }
-  status_reg_b = write_addr;
-  //status_reg_b = 0xf1;
-  ChangeIOState();
   return status_reg_b;
 }
 
@@ -171,12 +168,9 @@ void InitUc(void) {
 }
 
 void InitStatusFlags(void) {
-    // Fans off, ADC mux 0, CN8 disabled, PWR_enabled 
+    // Fans off, ADC mux 0, CN8 disabled, PWR disabled 
     status_reg_b = 0x00;
-    //ChangeIOState();
-    FAN1 = 1;
-    ENPWR = 1;
-    //CN8 = 1;
+    ChangeIOState();
 }
 
 int main(void) {

@@ -80,10 +80,10 @@ void I2CS_init(void) {
 }
 
 static uint8_t (*i2c_read_callback)(uint8_t, uint8_t);
-static uint8_t (*i2c_write_callback)(uint8_t);
+static uint8_t (*i2c_write_callback)(uint8_t, uint8_t);
 
 void I2c_set_callbacks(uint8_t (*read)(uint8_t, uint8_t),
-                       uint8_t (*write)(uint8_t)) {
+                       uint8_t (*write)(uint8_t, uint8_t)) {
   i2c_read_callback = read;
   i2c_write_callback = write;
 }
@@ -130,9 +130,10 @@ void I2cRead(void) {
 
 void I2cWrite(void) {
   // controller wishes to write to client
-	read_addr = TWI0.SDATA;
+	if (num_bytes == 0) read_addr = TWI0.SDATA;
   if (num_bytes > 0) {
-	  if (i2c_write_callback) TWI0.SDATA = i2c_write_callback(read_addr);
+	   uint8_t data = TWI0.SDATA;
+	  if (i2c_write_callback) TWI0.SDATA = i2c_write_callback(read_addr, data);
   }
   num_bytes++;									
   if (num_bytes > MAX_TRANSACTION) {		
@@ -164,7 +165,6 @@ ISR(TWI0_TWIS_vect) {
 
   // APIF && AP - valid address has been received
 	if ((TWI0.SSTATUS & TWI_APIF_bm) && (TWI0.SSTATUS & TWI_AP_bm)) { 
-   // PORTA.OUTSET = PIN1_bm;
     num_bytes = 0;									
     I2c_ack();
 	  // controller wishes to read from client (else return and wait for data from controller)

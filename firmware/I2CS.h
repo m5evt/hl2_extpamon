@@ -41,6 +41,6 @@
 
 void I2CS_init(void);	
 void I2c_set_callbacks(uint8_t (*read)(uint8_t, uint8_t),
-                       uint8_t (*write)(uint8_t));
+                       uint8_t (*write)(uint8_t, uint8_t));
 void I2c_timeout_counter_inc(void);
 #endif /* I2CS_H_ */
