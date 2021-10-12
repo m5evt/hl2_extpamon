@@ -195,7 +195,7 @@ void GetTemperature(void) {
   if (temperature_raw > trip_temperature) {
     ENPWR = 0;
   }
-  CBI(status_reg, ADCSAMPLE_M);      
+  CBI(status_reg, 0);      
 }
 
 void GetCurrent(void) {
@@ -233,14 +233,14 @@ int main(void) {
 
     for (;;) {
        if ((status_reg & DO_ADC_M) == DO_ADC_M) {
-     PORTA.OUTTGL = PIN1_bm;
+     //PORTA.OUTTGL = PIN1_bm;
          if ((status_reg & ADCSAMPLE_M) == ADCSAMPLE_M) {
-           PORTA.OUTSET = PIN1_bm;
            GetTemperature();
-           PORTA.OUTCLR = PIN1_bm;
          } 
          else {
+           PORTA.OUTSET = PIN1_bm;
            GetCurrent();
+           PORTA.OUTCLR = PIN1_bm;
          }
          CBI(status_reg, 1);
        }
