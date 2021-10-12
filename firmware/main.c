@@ -26,7 +26,7 @@
  * Additional license restrictions from Microchip may apply.
  */
 
-#define PERIOD_EXAMPLE_VALUE (0x1388)
+#define TEN_MS_PERIOD (0x1388)
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -39,8 +39,10 @@
 volatile uint8_t temperature_raw;
 volatile uint8_t current_raw;
 volatile uint8_t status_reg;
-volatile uint8_t status_reg_b;
-volatile uint8_t do_adc_flag;
+volatile uint8_t fan_counter;
+volatile uint8_t trip_current;
+volatile uint8_t trip_temperature;
+
 
 void TCA0_init(void) {
     // enable overflow interrupt 
@@ -50,7 +52,7 @@ void TCA0_init(void) {
     // disable event counting 
     TCA0.SINGLE.EVCTRL &= ~(TCA_SINGLE_CNTEI_bm);
     // set the period 
-    TCA0.SINGLE.PER = PERIOD_EXAMPLE_VALUE;
+    TCA0.SINGLE.PER = TEN_MS_PERIOD;
     TCA0.SINGLE.CTRLA = TCA_SINGLE_CLKSEL_DIV16_gc | TCA_SINGLE_ENABLE_bm;
 }
 
@@ -94,7 +96,7 @@ void ADC0_init(void) {
              | ADC_RESSEL_10BIT_gc;
 }
 
-uint16_t ADC0_read(uint8_t muxpos) {
+uint16_t ADC0_read(const uint8_t muxpos) {
   // Select analog input
   ADC0.MUXPOS = (muxpos<<0); 
    //Start conversion
@@ -108,20 +110,19 @@ uint16_t ADC0_read(uint8_t muxpos) {
 }
 
 // Send data to the HL2
-uint8_t i2cGetData(uint8_t read_addr, uint8_t this_byte){
+uint8_t i2cGetData(const uint8_t read_addr, const uint8_t this_byte){
   switch (read_addr) {
     case FLAGS_STATUS:
-      return status_reg_b;
+      return IOPORT;
       break;
     case MRF101_STATUS:
       switch (this_byte) {
         case 0:
-          if (temperature_raw > 40) SBI(status_reg, 7);      
           return temperature_raw;
         case 1:
           return current_raw;
         case 2:
-          return status_reg_b;
+          return IOPORT;
         case 3:
           return status_reg;
         default: break;
@@ -131,25 +132,21 @@ uint8_t i2cGetData(uint8_t read_addr, uint8_t this_byte){
   return 0x1f;
 }
 
-void ChangeIOState(void) {
-  IOPORT = status_reg_b;
-}
 // Read byte sent from HL2
-uint8_t i2cWriteData(uint8_t write_addr, uint8_t data) {
+uint8_t i2cWriteData(const uint8_t write_addr, const uint8_t data) {
   switch (write_addr) {
     case SET_CFG:
-      status_reg_b = data;
-      ChangeIOState();
+      IOPORT = data;
       break;
     case SET_CURRENT_TRIP:
-      // current * 10, e.g. 4 A = 40
+      trip_current = data;
       break;
     case SET_TEMP_TRIP:
-      // temp -> 26 deg C = 26
+      trip_temperature = data;
       break;
     default: break;
   }
-  return status_reg_b;
+  return IOPORT;
 }
 
 void SetupProtectedWrites(void) {
@@ -169,8 +166,48 @@ void InitUc(void) {
 
 void InitStatusFlags(void) {
     // Fans off, ADC mux 0, CN8 disabled, PWR disabled 
-    status_reg_b = 0x00;
-    ChangeIOState();
+    IOPORT = 0x00;
+}
+
+void GetTemperature(void) {
+  uint16_t temp_raw = ADC0_read(TEMPERATURE);
+  float this_temperature = ((float)temp_raw * (3.3 / 1024)) * 100;
+            
+  //temperature_raw = (uint8_t)(((float)temp_raw * (3.3 / 1024)) * 100);
+  temperature_raw = (uint8_t)this_temperature;
+  // Every 4080 ms sample the temperature to decide
+  // if; fan turns on, fan stays off, fan turns off (after being on)
+  if (fan_counter == 0) {
+    if (temperature_raw > FAN_TEMP_THRESHOLD) {
+      FAN1 = 1;
+    }
+    else {
+      FAN1 = 0;
+    }
+    fan_counter++;
+  } 
+  else if (fan_counter == 255) {
+    fan_counter = 0;
+  }
+  else if (fan_counter > 0) {
+    fan_counter++;
+  }
+  if (temperature_raw > trip_temperature) {
+    ENPWR = 0;
+  }
+  CBI(status_reg, ADCSAMPLE_M);      
+}
+
+void GetCurrent(void) {
+  uint16_t temp = ADC0_read(CURRENT);
+  // Convert ADC bits to real value e.g. 4.00 A 
+  float this_c = ((float)temp * (3.3 /1024) / 20) / CURRENT_SENSE_R;
+  // To fit into an 8 bit reg, measured value to full scale
+  current_raw = (uint8_t)((this_c / CURRENT_FULL_SCALE) * 255);
+  if (current_raw > trip_current) {
+    ENPWR = 0;
+  }
+  SBI(status_reg, 0);      
 }
 
 int main(void) {
@@ -180,43 +217,40 @@ int main(void) {
     I2c_set_callbacks(i2cGetData, i2cWriteData);
     // Setup application code
     InitStatusFlags();
+   
+    // Init globals
     temperature_raw = 0;
     current_raw = 0;
-    
-    PORTA.OUTCLR = PIN1_bm;
     status_reg = 0;
+    fan_counter = 0;
+    trip_current = 178;
+    trip_temperature = 45;
+
     // enable global interrupts */
     sei();
-
+    
     temperature_raw = ADC0_read(TEMPERATURE);
 
     for (;;) {
-       if (do_adc_flag) {
-
-    PORTA.OUTSET = PIN1_bm;
+       if ((status_reg & DO_ADC_M) == DO_ADC_M) {
+     PORTA.OUTTGL = PIN1_bm;
          if ((status_reg & ADCSAMPLE_M) == ADCSAMPLE_M) {
-           uint16_t temp_raw = ADC0_read(TEMPERATURE);
-           float this_temperature = ((float)temp_raw * (3.3 / 1024)) * 100;
-           temperature_raw = (uint8_t)this_temperature;
-           CBI(status_reg, 0);      
+           PORTA.OUTSET = PIN1_bm;
+           GetTemperature();
+           PORTA.OUTCLR = PIN1_bm;
          } 
          else {
-           uint16_t temp = ADC0_read(CURRENT);
-           float this_c = ((float)temp * (3.3 /1024) / 20) / 0.033;
-           this_c = (this_c / 5) * 255;
-           //current_raw = (temp >> 2) & 0xFF; 
-           current_raw = (uint8_t)this_c;
-           SBI(status_reg, 0);      
+           GetCurrent();
          }
-    PORTA.OUTCLR = PIN1_bm;
-       do_adc_flag = 0;
+         CBI(status_reg, 1);
        }
     }
 }
 
-// ADC sampling timer
+// ADC sampling timer (8 ms tick)
 ISR(TCA0_OVF_vect) {
-    do_adc_flag = 1;
+    // Set ADC sample flag
+    SBI(status_reg, 1);
     // Clear flag 
     TCA0.SINGLE.INTFLAGS = TCA_SINGLE_OVF_bm;
 }

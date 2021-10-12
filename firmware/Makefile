@@ -24,7 +24,7 @@ SRC = $(TARGET).c \
 
 # Optimization level, can be [0, 1, 2, 3, s]. 
 # 0 = turn off optimization. s = optimize for size.
-OPT = 3
+OPT = 2
 
 # List any extra directories to look for include files here.
 #     Each directory must be seperated by a space.
@@ -50,7 +50,7 @@ CSTANDARD = -std=$(CSTANDARD_GNU99)
 #CFLAGS = -g
 CFLAGS += -O$(OPT)
 CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
-CFLAGS += -Wall -Wstrict-prototypes
+CFLAGS += -Wall -Wstrict-prototypes -Wextra
 CFLAGS += -Wa,-adhlns=$(<:.c=.lst)
 #CFLAGS += $(patsubst %,-I%,$(EXTRAINCDIRS))
 CFLAGS += $(CSTANDARD)
@@ -73,8 +73,7 @@ PRINTF_LIB_MIN = -Wl,-u,vfprintf -lprintf_min
 # Floating point printf version (requires MATH_LIB = -lm below)
 PRINTF_LIB_FLOAT = -Wl,-u,vfprintf -lprintf_flt
 
-PRINTF_LIB = $(PRINTF_LIB_MIN)
-#PRINTF_LIB = $(PRINTF_LIB_FLOAT)
+PRINTF_LIB = $(PRINTF_LIB_NONE)
 
 MATH_LIB = -lm
 

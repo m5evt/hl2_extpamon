@@ -40,7 +40,7 @@
 #include "I2CS.h"
 #include "port.h"
 
-volatile uint8_t	read_addr;				// address received from controller
+static volatile uint8_t	read_addr;				// address received from controller
 volatile uint8_t  timeout_cnt;				// 1ms timeout tick counter
 volatile uint8_t	num_bytes = 0;		// number of bytes sent/received in transaction
 

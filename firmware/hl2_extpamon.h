@@ -46,9 +46,13 @@
 #define CURRENT            0x05
 #define TEMPERATURE        0x06
 
-#define STATUSFLAGS_M      0b00011110
-#define ADCSAMPLE_M        0b00000001
-#define FAN1_M             0b00000010
-#define FAN2_M             0b00000100
-#define CN8_M              0b00001000
-#define ENPWR_M            0b00010000
+//#define STATUSFLAGS_M      0b00011110
+#define ADCSAMPLE_M          0b00000001
+#define DO_ADC_M             0b00000010 
+//#define FAN2_M             0b00000100
+//#define CN8_M              0b00001000
+//#define ENPWR_M            0b00010000
+
+#define FAN_TEMP_THRESHOLD 29
+#define CURRENT_SENSE_R 0.033
+#define CURRENT_FULL_SCALE 5

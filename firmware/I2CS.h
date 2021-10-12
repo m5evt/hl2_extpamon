@@ -36,7 +36,6 @@
 #define I2CS_H_
 
 #define CLIENT_ADDRESS	0x2A		// 8 bit address, i.e. bit 0 = 0, will be substituted by R/W bit
-//#define SLAVE_ADDRESS	0x55		// 8 bit address, i.e. bit 0 = 0, will be substituted by R/W bit
 #define MAX_TRANSACTION 2		// maximum number of bytes sent/received in single transaction
 
 void I2CS_init(void);	
