@@ -2,8 +2,11 @@
 
 ## Overview
 
-Power amplifier instrumentation board designed to couple to the Hermes-Lite2
-SDR. 
+Power amplifier instrumentation board designed to couple to the Hermes-Lite2 SDR. 
+
+The firmware/hardware is designed to couple to an LM35 temperature sensor.
+
+The hardware should cope with upto 8 A of current to a power amplifer. However, at present the current is scaled to a full scale of 5 A. This can be changed in [hl2_extpamon.h](https://github.com/m5evt/hl2_extpamon/blob/main/firmware/hl2_extpamon.h). Other parameters such as automatic temperature turn on for the fan can be configured here.
 
 The module uses an ATTINY414 device with an i2c address of 0x2A. 
 
@@ -51,8 +54,7 @@ Device status correspod to:
 
 ## Writing data to device
 
-PORTA I/O can be set/clear by writing to address 0x02 in the device. For
-example, to enable the PA and turn on the fans send:
+PORTA I/O can be set/clear by writing to address 0x02 in the device. For example, to enable the PA and turn on the fans send:
 
 ```
 06AA021E
