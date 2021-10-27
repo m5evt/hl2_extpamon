@@ -2,6 +2,9 @@
 
 ## Overview
 
+![hl2_extpamon](https://raw.githubusercontent.com/wiki/m5evt/hl2_extpamon/hl2_extpamon.jpg)
+
+
 Power amplifier instrumentation board designed to couple to the Hermes-Lite2 SDR. 
 
 The firmware/hardware is designed to couple to an LM35 temperature sensor.
