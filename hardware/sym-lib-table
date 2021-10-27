@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name hl2_extpamon)(type Legacy)(uri ${KIPRJMOD}/libs/hl2_extpamon.lib)(options "")(descr ""))
+)

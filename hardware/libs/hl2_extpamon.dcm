@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP SQM50P08-25L
+D  TrenchFET® Power MOSFET
+K P-Channel MOSFET
+F https://www.mouser.co.uk/datasheet/2/427/sqm50p08-1764876.pdf
+$ENDCMP
+#
+#End Doc Library
